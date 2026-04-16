@@ -2,11 +2,15 @@ import Phaser from 'phaser';
 import { playJumpSound, playHitSound, startBGM, stopBGM, playVroomSound, playYeahSound, playHereItComesSound } from '../utils/Audio.js';
 import { PALETTE } from './Preloader.js';
 
-const INITIAL_GAME_SPEED = 500;
+const INITIAL_GAME_SPEED = 200;
 const SPEED_UP_INTERVAL_MS = 5000;
-const SPEED_MULTIPLIER = 1.1;
+const SPEED_MULTIPLIER = 1.25;
 const FERRARI_SPAWN_CHANCE = 16;
 const CYCLE_DURATION = 24000;
+const WORLD_SCALE = 1.25;
+const MIN_SPAWN_DELAY_MS = 1500;
+const MAX_SPAWN_DELAY_MS = 2800;
+const MIN_OBSTACLE_GAP_PX = 320;
 
 export default class Game extends Phaser.Scene {
   constructor() {
@@ -17,6 +21,7 @@ export default class Game extends Phaser.Scene {
     this.score = 0;
     this.isDead = false;
     this.spawnTimer = 0;
+    this.nextSpawnDelay = Phaser.Math.Between(MIN_SPAWN_DELAY_MS, MAX_SPAWN_DELAY_MS);
     this.gameSpeed = INITIAL_GAME_SPEED;
     this.speedUpTimer = 0;
     this.totalTime = 0;
@@ -356,11 +361,12 @@ export default class Game extends Phaser.Scene {
     while (x < w + 100) {
       const type = Phaser.Math.RND.pick(['buildingA', 'buildingB', 'buildingC']);
       const bld = this.add.image(x, farY, type).setOrigin(0, 1);
+      bld.setScale(WORLD_SCALE);
       bld.setTint(0x9898b0);
       bld.setDepth(-3);
       bld.setAlpha(0.7);
       this.buildingsFar.push(bld);
-      x += bld.width + Phaser.Math.Between(5, 20);
+      x += bld.displayWidth + Phaser.Math.Between(5, 20);
     }
 
     // --- Parallax city skyline (near layer) ---
@@ -369,10 +375,11 @@ export default class Game extends Phaser.Scene {
     while (x < w + 100) {
       const type = Phaser.Math.RND.pick(['buildingA', 'buildingB', 'buildingC']);
       const bld = this.add.image(x, farY, type).setOrigin(0, 1);
+      bld.setScale(WORLD_SCALE);
       bld.setDepth(-2);
       bld.setAlpha(0.85);
       this.buildingsNear.push(bld);
-      x += bld.width + Phaser.Math.Between(2, 15);
+      x += bld.displayWidth + Phaser.Math.Between(2, 15);
     }
 
     // Clouds
@@ -384,16 +391,19 @@ export default class Game extends Phaser.Scene {
     // Celestial bodies (Sun & Moon)
     this.dayColor = Phaser.Display.Color.ValueToColor('#88d0f0');
     this.nightColor = Phaser.Display.Color.ValueToColor('#081030');
-    this.sun = this.add.circle(w / 2, 0, 30, 0xfff000).setDepth(-5);
-    this.moon = this.add.circle(w / 2, 0, 24, 0xeeeeee).setDepth(-5);
+    this.sun = this.add.circle(w / 2, 0, 30 * WORLD_SCALE, 0xfff000).setDepth(-5);
+    this.moon = this.add.circle(w / 2, 0, 24 * WORLD_SCALE, 0xeeeeee).setDepth(-5);
 
     // Ground (sidewalk + road)
-    this.ground = this.add.tileSprite(w / 2, groundY, w * 2, 22, 'ground');
+    this.ground = this.add.tileSprite(w / 2, groundY, w * 2, 22 * WORLD_SCALE, 'ground');
     this.physics.add.existing(this.ground, true);
     this.groundY = groundY;
+    this.roadTopY = this.ground.y - this.ground.displayHeight / 2;
 
     // Player (DeLorean)
     this.player = this.physics.add.sprite(100, groundY - 30, 'delorean');
+    this.player.setScale(WORLD_SCALE);
+    this.player.setY(this.roadTopY - this.player.displayHeight / 2 + 2);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.ground);
 
@@ -481,10 +491,10 @@ export default class Game extends Phaser.Scene {
   _updateHoverMode() {
     const HOVER_THRESHOLD = 40; // pixels above ground before hover kicks in
     const playerBottom = this.player.y + this.player.displayHeight / 2;
-    const distanceFromGround = this.groundY - playerBottom;
+    const distanceFromGround = this.roadTopY - playerBottom;
 
     const highEnough = distanceFromGround > HOVER_THRESHOLD;
-    const onGround = this.player.body.touching.down;
+    const onGround = this.player.body.blocked.down || this.player.body.touching.down;
 
     if (!onGround && highEnough && !this.isHovering) {
       this.isHovering = true;
@@ -492,6 +502,8 @@ export default class Game extends Phaser.Scene {
     } else if ((onGround || !highEnough) && this.isHovering) {
       this.isHovering = false;
       this.player.play('delorean-drive');
+    } else if (onGround && !this.isHovering && this.player.anims.currentAnim?.key !== 'delorean-drive') {
+      this.player.play('delorean-drive', true);
     }
   }
 
@@ -511,6 +523,7 @@ export default class Game extends Phaser.Scene {
       y || Phaser.Math.Between(20, h * 0.25),
       'cloud'
     );
+    cloud.setScale(WORLD_SCALE);
     cloud.setAlpha(0.5);
     cloud.setDepth(-4);
     this.clouds.push(cloud);
@@ -526,8 +539,8 @@ export default class Game extends Phaser.Scene {
       type = 'ferrari'; // 16% Absolute Chance
     }
     let yOffset, hitW, hitH, velMultiplier = 1;
-    let randomScaleY = 1;
-    let randomScaleX = 1;
+    let randomScaleY = WORLD_SCALE;
+    let randomScaleX = WORLD_SCALE;
 
     switch (type) {
       case 'bird':
@@ -537,8 +550,8 @@ export default class Game extends Phaser.Scene {
         velMultiplier = 1.6; // travel faster
         break;
       case 'tree':
-        randomScaleY = Phaser.Math.FloatBetween(0.8, 1.2);
-        yOffset = 30 * randomScaleY - 2; // adjust origin to keep base planted
+        randomScaleY = WORLD_SCALE * Phaser.Math.FloatBetween(0.8, 1.2);
+        yOffset = 30 * randomScaleY - 2 * WORLD_SCALE; // keep base planted with larger scale
         hitW = 20;
         hitH = 50;
         break;
@@ -566,12 +579,13 @@ export default class Game extends Phaser.Scene {
     if (type === 'bird') tex = 'bird-up';
     else if (type === 'ferrari') tex = 'ferrari';
     
+    if (type !== 'tree') {
+      yOffset *= WORLD_SCALE;
+    }
+
     const obs = this.obstacles.create(w + 20, this.groundY - yOffset, tex);
     obs.setVelocityX(-this.gameSpeed * velMultiplier);
-    
-    if (randomScaleY !== 1 || randomScaleX !== 1) {
-      obs.setScale(randomScaleX, randomScaleY);
-    }
+    obs.setScale(randomScaleX, randomScaleY);
     
     obs.setSize(hitW, hitH);
 
@@ -589,11 +603,21 @@ export default class Game extends Phaser.Scene {
     }
   }
 
+  canSpawnObstacle() {
+    const rightmostObstacle = this.obstacles.getChildren().reduce((maxX, obs) => {
+      const rightEdge = obs.x + (obs.displayWidth || 0) / 2;
+      return Math.max(maxX, rightEdge);
+    }, -Infinity);
+
+    if (rightmostObstacle === -Infinity) return true;
+    return rightmostObstacle < this.scale.width - MIN_OBSTACLE_GAP_PX * WORLD_SCALE;
+  }
+
   spawnCertificate() {
     const w = this.scale.width;
     const yPos = this.groundY - Phaser.Math.Between(60, 140);
     const cert = this.certificates.create(w + 50, yPos, 'certificate');
-    cert.setScale(1.5);
+    cert.setScale(1.5 * WORLD_SCALE);
     cert.setDepth(1);
     cert.setVelocityX(-this.gameSpeed * 1.2);
     cert.waveTime = 0;
@@ -602,14 +626,14 @@ export default class Game extends Phaser.Scene {
     // Create aura
     cert.aura = this.add.graphics();
     cert.aura.fillStyle(0xffdd40, 0.6); // Golden-yellow glow
-    cert.aura.fillCircle(0, 0, 24);
+    cert.aura.fillCircle(0, 0, 24 * WORLD_SCALE);
     cert.aura.setDepth(0);
     
     // Tween aura to pulse rapidly
     this.tweens.add({
       targets: cert.aura,
-      scaleX: 2.2,
-      scaleY: 2.2,
+      scaleX: 2.2 * WORLD_SCALE,
+      scaleY: 2.2 * WORLD_SCALE,
       alpha: 0,
       duration: 350,
       yoyo: true,
@@ -652,13 +676,13 @@ export default class Game extends Phaser.Scene {
 
     // Find rightmost building
     let maxX = -Infinity;
-    buildings.forEach(b => { if (b.x + b.width > maxX) maxX = b.x + b.width; });
+    buildings.forEach(b => { if (b.x + b.displayWidth > maxX) maxX = b.x + b.displayWidth; });
 
     // Recycle buildings that go off-screen left
     buildings.forEach(bld => {
-      if (bld.x + bld.width < -10) {
+      if (bld.x + bld.displayWidth < -10) {
         bld.x = maxX + Phaser.Math.Between(2, 20);
-        maxX = bld.x + bld.width;
+        maxX = bld.x + bld.displayWidth;
       }
     });
   }
@@ -736,12 +760,12 @@ export default class Game extends Phaser.Scene {
 
     // Remove off-screen obstacles or animate them
     this.obstacles.getChildren().forEach(obs => {
-      if (!obs.passed && obs.x + (obs.width || 0) < this.player.x) {
+      if (!obs.passed && obs.x + (obs.displayWidth || 0) < this.player.x) {
         obs.passed = true;
         this.score += obs.pointsValue;
       }
 
-      if (obs.x < -40) {
+      if (obs.x < -80 * WORLD_SCALE) {
         obs.destroy();
       } else if (obs.isBird) {
         obs.waveTime += delta * 0.005;
@@ -749,11 +773,11 @@ export default class Game extends Phaser.Scene {
       }
     });
 
-    // Spawn obstacles (timers dynamically scaled to maintain density at any speed)
+    // Spawn obstacles with wider spacing and a minimum horizontal gap
     this.spawnTimer += delta;
-    const speedRatio = INITIAL_GAME_SPEED / this.gameSpeed;
-    if (this.spawnTimer > Phaser.Math.Between(800 * speedRatio, 1666 * speedRatio)) {
+    if (this.spawnTimer > this.nextSpawnDelay && this.canSpawnObstacle()) {
       this.spawnTimer = 0;
+      this.nextSpawnDelay = Phaser.Math.Between(MIN_SPAWN_DELAY_MS, MAX_SPAWN_DELAY_MS);
       this.spawnObstacle();
     }
 

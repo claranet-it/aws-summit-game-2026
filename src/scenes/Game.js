@@ -868,6 +868,11 @@ export default class Game extends Phaser.Scene {
       } else if (obs.isBird) {
         obs.waveTime += delta * 0.005;
         obs.setVelocityY(Math.cos(obs.waveTime) * 60);
+        obs.setVelocityX(-this.gameSpeed * 1.6);
+      } else if (obs.texture && obs.texture.key === 'ferrari') {
+        obs.setVelocityX(-this.gameSpeed * 2.8);
+      } else {
+        obs.setVelocityX(-this.gameSpeed);
       }
     });
 

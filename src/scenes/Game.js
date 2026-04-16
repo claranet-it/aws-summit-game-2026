@@ -7,6 +7,7 @@ const SPEED_UP_INTERVAL_MS = 5000;
 const SPEED_MULTIPLIER = 1.25;
 const FERRARI_SPAWN_CHANCE = 16;
 const CYCLE_DURATION = 42000;
+const DAY_NIGHT_CYCLE = false; // set to true to enable day/night cycle
 const WORLD_SCALE = 1.25;
 const BUILDING_SCALE = WORLD_SCALE * 1.50;
 const MIN_SPAWN_DELAY_MS = 1500;
@@ -861,6 +862,7 @@ export default class Game extends Phaser.Scene {
     this.ground.tilePositionX += (this.gameSpeed * delta) / 1000;
 
     // Day/Night Cycle Update
+    if (DAY_NIGHT_CYCLE) {
     this.cycleTime = (this.cycleTime + delta) % CYCLE_DURATION;
     const cycleProgress = this.cycleTime / CYCLE_DURATION;
     const angle = cycleProgress * Math.PI * 2;
@@ -883,6 +885,7 @@ export default class Game extends Phaser.Scene {
     const moonAngle = sunAngle + Math.PI;
     this.moon.x = cx + Math.cos(moonAngle) * r;
     this.moon.y = cy + Math.sin(moonAngle) * r * 0.8;
+    } // end DAY_NIGHT_CYCLE
 
     // Parallax buildings (far = slow, near = medium)
     this.scrollParallaxLayer(this.buildingsFar, this.gameSpeed * 0.15, delta, 0.04, 0.35);

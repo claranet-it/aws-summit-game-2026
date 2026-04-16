@@ -60,15 +60,14 @@ export default class MainMenu extends Phaser.Scene {
     const certSpacing = isMobile ? 42 : 55;
     const certCx = w / 2 + colSpacing;
     const certData = [
-      { key: 'cert-bronze', label: '+50',  color: '#cc8844', name: 'Found.' },
-      { key: 'cert-silver', label: '+100', color: '#aabbdd', name: 'Assoc.' },
-      { key: 'cert-gold',   label: '+200', color: '#ffcc00', name: 'Pro' },
+      { key: 'cert-bronze', label: '+50',  color: '#3d4552', name: 'Found.' },
+      { key: 'cert-silver', label: '+100', color: '#2630c2', name: 'Assoc.' },
+      { key: 'cert-gold',   label: '+200', color: '#316f87', name: 'Pro' },
     ];
     certData.forEach((c, i) => {
       const cx2 = certCx + (i - 1) * certSpacing;
       this.add.image(cx2, certRowY, c.key).setScale(1.1).setOrigin(0.5);
-      this.add.text(cx2, certRowY + 22, c.label, { fontFamily: '"Courier New"', fontSize: '13px', color: c.color, fontStyle: 'bold' }).setOrigin(0.5);
-      this.add.text(cx2, certRowY - 22, c.name, { fontFamily: '"Courier New"', fontSize: '10px', color: '#aaaaaa' }).setOrigin(0.5);
+      this.add.text(cx2, certRowY + 26, c.label, { fontFamily: '"Courier New"', fontSize: '13px', color: c.color, fontStyle: 'bold' }).setOrigin(0.5);
     });
 
     // Lives info

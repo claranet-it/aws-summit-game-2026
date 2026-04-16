@@ -539,7 +539,7 @@ export default class Game extends Phaser.Scene {
 
     switch (type) {
       case 'bird':
-        yOffset = Phaser.Math.Between(50, 100); // mid-air
+        yOffset = Phaser.Math.Between(110, 160); // high enough to pass under
         hitW = 66; // 11 * 6
         hitH = 24; // 4 * 6
         velMultiplier = 1.6; // travel faster

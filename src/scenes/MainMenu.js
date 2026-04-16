@@ -71,6 +71,13 @@ export default class MainMenu extends Phaser.Scene {
       this.add.text(cx2, certRowY - 22, c.name, { fontFamily: '"Courier New"', fontSize: '10px', color: '#aaaaaa' }).setOrigin(0.5);
     });
 
+    // Lives info
+    this.add.text(w / 2, legendY + rowSpacing + 62, '3 lives  •  +1 life every 500 pts  •  speed resets on hit', {
+      fontFamily: '"Courier New"',
+      fontSize: isMobile ? '10px' : '12px',
+      color: '#aaaaaa',
+    }).setOrigin(0.5);
+
     // Call to Action
     const startText = this.add.text(w / 2, legendY + rowSpacing + 90, 'Press SPACE or TAP to Start', {
       fontFamily: '"Courier New"',

@@ -21,6 +21,8 @@ export default class Game extends Phaser.Scene {
   init() {
     this.score = 0;
     this.isDead = false;
+    this.lives = 3;
+    this.lastLifeBonus = 0;
     this.spawnTimer = 0;
     this.nextSpawnDelay = Phaser.Math.Between(MIN_SPAWN_DELAY_MS, MAX_SPAWN_DELAY_MS);
     this.gameSpeed = INITIAL_GAME_SPEED;
@@ -454,6 +456,9 @@ export default class Game extends Phaser.Scene {
       color: '#181830'
     }).setOrigin(1, 0);
 
+    // Lives UI
+    this.createLivesUI();
+
     // Timer text
     this.timerText = this.add.text(20, 16, 'TIME: 0s', {
       fontFamily: '"Courier New"',
@@ -666,16 +671,62 @@ export default class Game extends Phaser.Scene {
   }
 
   handleCollision() {
+    if (this.isDead) return;
     this.isDead = true;
+    this.lives--;
+    this.updateLivesUI();
     this.physics.pause();
     this.player.stop();
     this.player.setTint(0xff4020);
-    stopBGM();
     playHitSound();
 
-    this.time.delayedCall(1000, () => {
-      this.scene.start('GameOver', { score: Math.floor(this.score) });
-    });
+    if (this.lives <= 0) {
+      stopBGM();
+      this.time.delayedCall(1000, () => {
+        this.scene.start('GameOver', { score: Math.floor(this.score) });
+      });
+    } else {
+      // Respawn: clear obstacles, reset speed, resume
+      this.time.delayedCall(900, () => {
+        this.obstacles.clear(true, true);
+        this.certificates.getChildren().forEach(c => { if (c.aura) c.aura.destroy(); });
+        this.certificates.clear(true, true);
+        this.certActive = false;
+        this.certSpawnTimer = 0;
+        this.gameSpeed = INITIAL_GAME_SPEED;
+        this.speedUpTimer = 0;
+        this.spawnTimer = 0;
+        this.player.clearTint();
+        this.player.setY(this.roadTopY - this.player.displayHeight / 2 + 2);
+        this.player.setVelocity(0, 0);
+        this.player.play('delorean-drive');
+        this.isHovering = false;
+        this.isJumpHeld = false;
+        this.isDead = false;
+        this.physics.resume();
+        this.spawnCertificate();
+      });
+    }
+  }
+
+  createLivesUI() {
+    const w = this.scale.width;
+    const h = this.scale.height;
+    this.livesIcons = [];
+    for (let i = 0; i < 3; i++) {
+      const icon = this.add.image(w - 20 - i * 56, h - 18, 'delorean')
+        .setOrigin(1, 0.5)
+        .setScale(0.55)
+        .setDepth(10)
+        .setAlpha(1);
+      this.livesIcons.push(icon);
+    }
+  }
+
+  updateLivesUI() {
+    for (let i = 0; i < this.livesIcons.length; i++) {
+      this.livesIcons[i].setAlpha(i < this.lives ? 1 : 0.18);
+    }
   }
 
   tryAttachBillboard(building, chance, alpha) {
@@ -902,6 +953,14 @@ export default class Game extends Phaser.Scene {
 
     // Score update
     this.scoreText.setText(Math.floor(this.score).toString());
+
+    // Extra life every 500 points
+    const lifeBonus = Math.floor(this.score / 500);
+    if (lifeBonus > this.lastLifeBonus) {
+      this.lastLifeBonus = lifeBonus;
+      this.lives = Math.min(this.lives + 1, 5);
+      this.updateLivesUI();
+    }
 
     this.totalTime += delta;
     this.timerText.setText('TIME: ' + Math.floor(this.totalTime / 1000) + 's');

@@ -6,8 +6,9 @@ const INITIAL_GAME_SPEED = 200;
 const SPEED_UP_INTERVAL_MS = 5000;
 const SPEED_MULTIPLIER = 1.25;
 const FERRARI_SPAWN_CHANCE = 16;
-const CYCLE_DURATION = 24000;
+const CYCLE_DURATION = 42000;
 const WORLD_SCALE = 1.25;
+const BUILDING_SCALE = WORLD_SCALE * 1.50;
 const MIN_SPAWN_DELAY_MS = 1500;
 const MAX_SPAWN_DELAY_MS = 2800;
 const MIN_OBSTACLE_GAP_PX = 320;
@@ -28,6 +29,7 @@ export default class Game extends Phaser.Scene {
     this.cycleTime = 0;
     this.certSpawnTimer = 0;
     this.certActive = false;
+    this.activeBillboard = null;
     
     this.createDeLoreanTexture();
   }
@@ -345,15 +347,6 @@ export default class Game extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor('#88d0f0');
 
-    // Top Logo
-    const logo = this.add.image(w / 2, 40, 'claranet-logo').setOrigin(0.5);
-    logo.setScale(0.25);
-    logo.setAlpha(1);
-    logo.setDepth(10); // Bring it to foreground
-    if (logo.postFX) {
-      logo.postFX.addPixelate(1); // Apply pixel art style (4x4 blocks)
-    }
-
     // --- Parallax city skyline (far layer) ---
     this.buildingsFar = [];
     const farY = groundY;
@@ -361,11 +354,12 @@ export default class Game extends Phaser.Scene {
     while (x < w + 100) {
       const type = Phaser.Math.RND.pick(['buildingA', 'buildingB', 'buildingC']);
       const bld = this.add.image(x, farY, type).setOrigin(0, 1);
-      bld.setScale(WORLD_SCALE);
+      bld.setScale(BUILDING_SCALE);
       bld.setTint(0x9898b0);
       bld.setDepth(-3);
       bld.setAlpha(0.7);
       this.buildingsFar.push(bld);
+      this.tryAttachBillboard(bld, 0.04, 0.35);
       x += bld.displayWidth + Phaser.Math.Between(5, 20);
     }
 
@@ -375,10 +369,11 @@ export default class Game extends Phaser.Scene {
     while (x < w + 100) {
       const type = Phaser.Math.RND.pick(['buildingA', 'buildingB', 'buildingC']);
       const bld = this.add.image(x, farY, type).setOrigin(0, 1);
-      bld.setScale(WORLD_SCALE);
+      bld.setScale(BUILDING_SCALE);
       bld.setDepth(-2);
       bld.setAlpha(0.85);
       this.buildingsNear.push(bld);
+      this.tryAttachBillboard(bld, 0.08, 0.5);
       x += bld.displayWidth + Phaser.Math.Between(2, 15);
     }
 
@@ -668,10 +663,110 @@ export default class Game extends Phaser.Scene {
     });
   }
 
-  scrollParallaxLayer(buildings, speed, delta) {
+  tryAttachBillboard(building, chance, alpha) {
+    if (this.activeBillboard) return;
+    if (Phaser.Math.FloatBetween(0, 1) > chance) return;
+
+    const panel = this.add.rectangle(0, 0, 10, 10, 0xffffff, 0.95).setOrigin(0.5);
+    panel.setStrokeStyle(2, 0xc8ccd4, 0.95);
+    panel.setDepth(building.depth + 0.15);
+
+    const billboard = this.add.image(0, 0, 'claranet-logo').setOrigin(0.5);
+    billboard.setDepth(building.depth + 0.2);
+    billboard.setAlpha(Math.min(0.9, alpha + 0.28));
+    billboard.setBlendMode(Phaser.BlendModes.NORMAL);
+
+    // Keep the logo subtle and proportionate to each building width.
+    const targetWidth = building.displayWidth * 0.45;
+    billboard.setScale(targetWidth / billboard.width);
+
+    const panelWidth = billboard.displayWidth + 20;
+    const panelHeight = billboard.displayHeight + 14;
+    panel.setSize(panelWidth, panelHeight);
+
+    const poleHeight = Math.max(16, panelHeight * 0.55);
+    const poleOffsetX = panelWidth * 0.28;
+    const poleLeft = this.add.rectangle(0, 0, 4, poleHeight, 0x5a5f6b, 0.9).setOrigin(0.5, 1);
+    const poleRight = this.add.rectangle(0, 0, 4, poleHeight, 0x5a5f6b, 0.9).setOrigin(0.5, 1);
+    poleLeft.setDepth(building.depth + 0.1);
+    poleRight.setDepth(building.depth + 0.1);
+
+    const baseBeam = this.add.rectangle(0, 0, panelWidth * 0.72, 4, 0x454b57, 0.85).setOrigin(0.5, 0.5);
+    baseBeam.setDepth(building.depth + 0.12);
+
+    building.billboardPanel = panel;
+    building.billboardPoleLeft = poleLeft;
+    building.billboardPoleRight = poleRight;
+    building.billboardBeam = baseBeam;
+    building.billboard = billboard;
+    this.activeBillboard = billboard;
+    this.positionBillboard(building);
+  }
+
+  positionBillboard(building) {
+    if (!building.billboard) return;
+    const x = building.x + building.displayWidth * 0.5;
+    const roofY = building.y - building.displayHeight;
+    const y = roofY - building.billboard.displayHeight / 2 - 28;
+
+    const panel = building.billboardPanel;
+    const poleLeft = building.billboardPoleLeft;
+    const poleRight = building.billboardPoleRight;
+    const beam = building.billboardBeam;
+
+    if (panel) {
+      panel.x = x;
+      panel.y = y;
+    }
+
+    if (poleLeft && poleRight) {
+      const panelWidth = panel ? panel.width : building.billboard.displayWidth + 20;
+      const poleOffsetX = panelWidth * 0.28;
+      const poleTopY = y + (panel ? panel.height / 2 : building.billboard.displayHeight / 2 + 7);
+
+      poleLeft.x = x - poleOffsetX;
+      poleLeft.y = roofY;
+      poleRight.x = x + poleOffsetX;
+      poleRight.y = roofY;
+
+      if (beam) {
+        beam.x = x;
+        beam.y = poleTopY + 2;
+      }
+    }
+
+    building.billboard.x = x;
+    building.billboard.y = y;
+  }
+
+  clearBillboard(building) {
+    if (!building.billboard) return;
+    if (building.billboardPanel) {
+      building.billboardPanel.destroy();
+      building.billboardPanel = null;
+    }
+    if (building.billboardPoleLeft) {
+      building.billboardPoleLeft.destroy();
+      building.billboardPoleLeft = null;
+    }
+    if (building.billboardPoleRight) {
+      building.billboardPoleRight.destroy();
+      building.billboardPoleRight = null;
+    }
+    if (building.billboardBeam) {
+      building.billboardBeam.destroy();
+      building.billboardBeam = null;
+    }
+    building.billboard.destroy();
+    building.billboard = null;
+    this.activeBillboard = null;
+  }
+
+  scrollParallaxLayer(buildings, speed, delta, billboardChance, billboardAlpha) {
     const w = this.scale.width;
     buildings.forEach(bld => {
       bld.x -= speed * delta / 1000;
+      this.positionBillboard(bld);
     });
 
     // Find rightmost building
@@ -681,8 +776,11 @@ export default class Game extends Phaser.Scene {
     // Recycle buildings that go off-screen left
     buildings.forEach(bld => {
       if (bld.x + bld.displayWidth < -10) {
+        this.clearBillboard(bld);
         bld.x = maxX + Phaser.Math.Between(2, 20);
         maxX = bld.x + bld.displayWidth;
+        this.tryAttachBillboard(bld, billboardChance, billboardAlpha);
+        this.positionBillboard(bld);
       }
     });
   }
@@ -720,8 +818,8 @@ export default class Game extends Phaser.Scene {
     this.moon.y = cy + Math.sin(moonAngle) * r * 0.8;
 
     // Parallax buildings (far = slow, near = medium)
-    this.scrollParallaxLayer(this.buildingsFar, this.gameSpeed * 0.15, delta);
-    this.scrollParallaxLayer(this.buildingsNear, this.gameSpeed * 0.4, delta);
+    this.scrollParallaxLayer(this.buildingsFar, this.gameSpeed * 0.15, delta, 0.04, 0.35);
+    this.scrollParallaxLayer(this.buildingsNear, this.gameSpeed * 0.4, delta, 0.08, 0.5);
 
     // Certificates animation and respawn logic
     if (!this.certActive) {

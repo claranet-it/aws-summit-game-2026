@@ -68,6 +68,7 @@ export default class Preloader extends Phaser.Scene {
 
   preload() {
     this.load.image('claranet-logo', 'claranet-logo-center.svg');
+    this.load.image('aws-logo', 'aws-logo.svg');
   }
 
   create() {

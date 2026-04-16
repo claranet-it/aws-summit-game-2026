@@ -125,9 +125,9 @@ export default class MainMenu extends Phaser.Scene {
     const lineGap = isMobile => isMobile ? 38 : 52; // eslint-disable-line no-unused-vars
     const gap = Math.round(52 * scale);
 
-    drawLine('BACK', cx, baseY, 72);
-    drawLine('TO THE', cx, baseY + gap, 48);
-    drawLine('FUTURE OF CLOUD', cx, baseY + gap * 2, 56);
+    drawLine('BACK TO THE', cx, baseY, 54);
+    drawLine('FUTURE OF', cx, baseY + gap, 62);
+    drawLine('CLOUD', cx, baseY + gap * 2, 80);
   }
 
   startGame() {

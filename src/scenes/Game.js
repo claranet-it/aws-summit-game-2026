@@ -686,7 +686,8 @@ export default class Game extends Phaser.Scene {
     panel.setStrokeStyle(2, 0xc8ccd4, 0.95);
     panel.setDepth(building.depth + 0.15);
 
-    const billboard = this.add.image(0, 0, 'claranet-logo').setOrigin(0.5);
+    const logoKey = Phaser.Math.RND.pick(['claranet-logo', 'aws-logo']);
+    const billboard = this.add.image(0, 0, logoKey).setOrigin(0.5);
     billboard.setDepth(building.depth + 0.2);
     billboard.setAlpha(Math.min(0.9, alpha + 0.28));
     billboard.setBlendMode(Phaser.BlendModes.NORMAL);

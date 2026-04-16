@@ -50,14 +50,14 @@ export function playYeahSound() {
 }
 
 export function playHereItComesSound() {
-  playBeep(440, 0.1, 'square', 0);
-  playBeep(660, 0.15, 'square', 0.1);
-  if ('speechSynthesis' in window) {
-    const msg = new SpeechSynthesisUtterance("Catch me if you can!");
-    msg.pitch = 0.8;
-    msg.rate = 1.1;
-    window.speechSynthesis.speak(msg);
-  }
+  // Classic 8-bit bonus jingle: ascending arpeggio + fanfare
+  playBeep(262, 0.07, 'square', 0.00);   // C4
+  playBeep(330, 0.07, 'square', 0.07);   // E4
+  playBeep(392, 0.07, 'square', 0.14);   // G4
+  playBeep(523, 0.07, 'square', 0.21);   // C5
+  playBeep(659, 0.07, 'square', 0.28);   // E5
+  playBeep(784, 0.12, 'square', 0.35);   // G5
+  playBeep(1047, 0.2,  'square', 0.47);  // C6 (fanfare peak)
 }
 
 export function playVroomSound() {

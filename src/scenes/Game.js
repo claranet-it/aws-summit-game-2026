@@ -24,119 +24,308 @@ export default class Game extends Phaser.Scene {
     this.certSpawnTimer = 0;
     this.certActive = false;
     
-    this.generateRandomStudent();
+    this.createDeLoreanTexture();
   }
 
-  generateRandomStudent() {
-    const hairColors = [0x483020, 0xd0a040, 0x181818, 0xd04040, 0xffe080];
-    const shirtColors = [0x3878c8, 0x28a058, 0xc83838, 0xc8c838, 0x7838c8, 0xffffff];
-    const backpackColors = [0xd04848, 0x48d048, 0x4848d0, 0xd0d048, 0xd048d0, 0x222222];
-
-    const hairColor = Phaser.Math.RND.pick(hairColors);
-    const shirtColor = Phaser.Math.RND.pick(shirtColors);
-    const backpackColor = Phaser.Math.RND.pick(backpackColors);
-    const isFemale = Phaser.Math.FloatBetween(0, 1) > 0.5;
-
-    const darken = (color) => {
-      let r = Math.floor(((color >> 16) & 0xff) * 0.7);
-      let g = Math.floor(((color >> 8) & 0xff) * 0.7);
-      let b = Math.floor((color & 0xff) * 0.7);
-      return (r << 16) | (g << 8) | b;
-    };
-
-    const shirtDark = darken(shirtColor);
-    const backpackDark = darken(backpackColor);
-
-    this.playerConfig = { hairColor, shirtColor, backpackColor, isFemale };
-
-    if (this.textures.exists('student')) {
-      this.textures.remove('student');
-      this.textures.remove('student-run-1');
-      this.textures.remove('student-run-2');
+  createDeLoreanTexture() {
+    if (this.textures.exists('delorean')) {
+      this.textures.remove('delorean');
+      this.textures.remove('delorean-drive-1');
+      this.textures.remove('delorean-drive-2');
     }
 
     const g = this.add.graphics();
-    const s = 2; // base scale
+    const s = 2;
+    const W = 46;
+    const H = 22;
 
-    const drawCharacter = (key, legFrame) => {
-      g.fillStyle(PALETTE.skin, 1);
-      g.fillRect(6 * s, 0, 6 * s, 6 * s);
+    // Colors
+    const silver   = 0xc0c0c8;
+    const silverDk = 0x888890;
+    const silverLt = 0xe8eaf0;
+    const glass    = 0x304880;
+    const wheel    = 0x181818;
+    const hubCol   = 0xa0a0a8;
+    const fluxBlue = 0x40c8ff;
+    const fluxGlow = 0x90e0ff;
+    const headlit  = 0xffff90;
+    const taillit  = 0xff2010;
+    const undercar = 0x404048;
+    const stripe   = 0xd0d0d8;
 
-      // Hair
-      g.fillStyle(hairColor, 1);
-      g.fillRect(6 * s, 0, 6 * s, 2 * s);
-      g.fillRect(6 * s, 0, 1 * s, 4 * s);
+    const drawDelorean = (key, spokeAngle) => {
+      // --- Undercarriage / ground skirt ---
+      g.fillStyle(undercar, 1);
+      g.fillRect(5*s, 17*s, 36*s, 2*s);
 
-      if (isFemale) {
-        g.fillRect(5 * s, 2 * s, 1 * s, 6 * s); // long hair left
-        g.fillRect(12 * s, 2 * s, 1 * s, 3 * s); // long hair right
-      }
+      // --- Main body slab ---
+      g.fillStyle(silver, 1);
+      g.fillRect(4*s, 10*s, 38*s, 7*s);
 
-      // Eye & detail
-      g.fillStyle(0x181830, 1);
-      g.fillRect(10 * s, 3 * s, 1 * s, 1 * s);
-      g.fillStyle(PALETTE.skinDark, 1);
-      g.fillRect(10 * s, 5 * s, 2 * s, 1 * s);
+      // --- Body highlight (top edge) ---
+      g.fillStyle(silverLt, 1);
+      g.fillRect(4*s, 10*s, 38*s, 1*s);
 
-      // Shirt
-      g.fillStyle(shirtColor, 1);
-      g.fillRect(5 * s, 6 * s, 7 * s, 8 * s);
-      g.fillStyle(shirtDark, 1);
-      g.fillRect(5 * s, 6 * s, 2 * s, 8 * s);
+      // --- Body shadow (bottom edge) ---
+      g.fillStyle(silverDk, 1);
+      g.fillRect(4*s, 16*s, 38*s, 1*s);
 
-      // Arms
-      g.fillStyle(PALETTE.skin, 1);
-      g.fillRect(12 * s, 7 * s, 3 * s, 2 * s);
-      g.fillRect(3 * s, 9 * s, 2 * s, 2 * s);
+      // --- Rear fascia ---
+      g.fillStyle(silverDk, 1);
+      g.fillRect(2*s, 10*s, 3*s, 7*s);
+      g.fillStyle(undercar, 1);
+      g.fillRect(2*s, 15*s, 3*s, 2*s);
 
-      // Backpack
-      g.fillStyle(backpackColor, 1);
-      g.fillRect(3 * s, 7 * s, 3 * s, 6 * s);
-      g.fillStyle(backpackDark, 1);
-      g.fillRect(3 * s, 7 * s, 1 * s, 6 * s);
+      // --- Front fascia (wedge nose) ---
+      g.fillStyle(silverDk, 1);
+      g.fillRect(40*s, 10*s, 3*s, 7*s);
+      g.fillRect(43*s, 11*s, 1*s, 5*s);
+      g.fillStyle(undercar, 1);
+      g.fillRect(40*s, 15*s, 4*s, 2*s);
 
-      // Legs
-      g.fillStyle(PALETTE.pants, 1);
-      if (legFrame === 0) {
-        g.fillRect(5 * s, 14 * s, 3 * s, 5 * s);
-        g.fillRect(9 * s, 14 * s, 3 * s, 5 * s);
-      } else if (legFrame === 1) {
-        g.fillRect(4 * s, 14 * s, 3 * s, 4 * s);
-        g.fillRect(9 * s, 14 * s, 3 * s, 5 * s);
+      // --- Gull-wing door panel lines ---
+      g.fillStyle(silverDk, 1);
+      g.fillRect(11*s, 10*s, 1*s, 6*s);  // rear door edge
+      g.fillRect(31*s, 10*s, 1*s, 6*s);  // front door edge
+      g.fillRect(11*s, 13*s, 20*s, 1*s); // horizontal door split
+
+      // --- Stainless steel vertical stripes on doors ---
+      g.fillStyle(stripe, 1);
+      g.fillRect(14*s, 10*s, 1*s, 6*s);
+      g.fillRect(18*s, 10*s, 1*s, 6*s);
+      g.fillRect(24*s, 10*s, 1*s, 6*s);
+      g.fillRect(28*s, 10*s, 1*s, 6*s);
+
+      // --- Cabin / upper structure ---
+      g.fillStyle(silver, 1);
+      g.fillRect(12*s, 5*s, 19*s, 5*s);  // cabin top
+      g.fillRect(10*s, 7*s, 3*s, 3*s);   // rear A-pillar slope
+      g.fillRect(30*s, 6*s, 3*s, 4*s);   // front C-pillar slope
+      g.fillRect(33*s, 7*s, 3*s, 3*s);   // front screen slope
+      g.fillRect(36*s, 8*s, 3*s, 2*s);   // hood slope
+      g.fillRect(38*s, 9*s, 3*s, 1*s);   // hood tip
+
+      // --- Windows ---
+      g.fillStyle(glass, 1);
+      g.fillRect(11*s, 7*s, 4*s, 3*s);   // rear quarter window
+      g.fillRect(17*s, 6*s, 6*s, 4*s);   // main rear window
+      g.fillRect(25*s, 6*s, 6*s, 4*s);   // main front window
+
+      // --- Window pillars ---
+      g.fillStyle(silverDk, 1);
+      g.fillRect(15*s, 5*s, 2*s, 5*s);   // B-pillar
+      g.fillRect(23*s, 5*s, 2*s, 5*s);   // C-pillar
+
+      // --- Flux capacitor glow (rear, back-to-the-future style) ---
+      g.fillStyle(fluxBlue, 1);
+      g.fillRect(0*s, 9*s, 2*s, 4*s);
+      g.fillStyle(fluxGlow, 1);
+      g.fillRect(0*s, 10*s, 1*s, 2*s);
+
+      // --- Time circuit light strip (on body, rear) ---
+      g.fillStyle(0xff4400, 1);
+      g.fillRect(3*s, 11*s, 1*s, 1*s);
+      g.fillStyle(0x00ff88, 1);
+      g.fillRect(3*s, 12*s, 1*s, 1*s);
+      g.fillStyle(0xffdd00, 1);
+      g.fillRect(3*s, 13*s, 1*s, 1*s);
+
+      // --- Headlights (front) ---
+      g.fillStyle(headlit, 1);
+      g.fillRect(42*s, 11*s, 2*s, 3*s);
+      g.fillStyle(0xffffff, 1);
+      g.fillRect(42*s, 11*s, 1*s, 1*s);
+
+      // --- Tail lights (rear) ---
+      g.fillStyle(taillit, 1);
+      g.fillRect(2*s, 11*s, 1*s, 3*s);
+
+      // --- Wheel arches (cut into body) ---
+      g.fillStyle(undercar, 1);
+      g.fillRect(6*s, 15*s, 8*s, 2*s);
+      g.fillRect(32*s, 15*s, 8*s, 2*s);
+
+      // --- Wheels ---
+      g.fillStyle(wheel, 1);
+      g.fillCircle(10*s, 19*s, 4*s);
+      g.fillCircle(36*s, 19*s, 4*s);
+
+      // --- Tire highlight ---
+      g.fillStyle(0x383838, 1);
+      g.fillCircle(10*s, 18*s, 2*s);
+      g.fillCircle(36*s, 18*s, 2*s);
+
+      // --- Wheel hub & spokes (animated) ---
+      g.fillStyle(hubCol, 1);
+      g.fillCircle(10*s, 19*s, 2*s);
+      g.fillCircle(36*s, 19*s, 2*s);
+
+      // Spokes (2 frames: horizontal vs vertical)
+      g.fillStyle(wheel, 1);
+      if (spokeAngle === 0) {
+        // Horizontal spokes
+        g.fillRect(6*s, 19*s, 8*s, 1*s);
+        g.fillRect(32*s, 19*s, 8*s, 1*s);
+        g.fillRect(10*s, 15*s, 1*s, 8*s);
+        g.fillRect(36*s, 15*s, 1*s, 8*s);
       } else {
-        g.fillRect(6 * s, 14 * s, 3 * s, 5 * s);
-        g.fillRect(10 * s, 14 * s, 3 * s, 4 * s);
+        // Diagonal spokes (45°)
+        g.fillRect(7*s, 16*s, 1*s, 1*s);
+        g.fillRect(8*s, 17*s, 1*s, 1*s);
+        g.fillRect(12*s, 21*s, 1*s, 1*s);
+        g.fillRect(13*s, 22*s, 1*s, 1*s);
+        g.fillRect(7*s, 21*s, 1*s, 1*s);
+        g.fillRect(8*s, 22*s, 1*s, 1*s);
+        g.fillRect(12*s, 16*s, 1*s, 1*s);
+        g.fillRect(13*s, 17*s, 1*s, 1*s);
+        g.fillRect(33*s, 16*s, 1*s, 1*s);
+        g.fillRect(34*s, 17*s, 1*s, 1*s);
+        g.fillRect(38*s, 21*s, 1*s, 1*s);
+        g.fillRect(39*s, 22*s, 1*s, 1*s);
+        g.fillRect(33*s, 21*s, 1*s, 1*s);
+        g.fillRect(34*s, 22*s, 1*s, 1*s);
+        g.fillRect(38*s, 16*s, 1*s, 1*s);
+        g.fillRect(39*s, 17*s, 1*s, 1*s);
       }
 
-      g.fillStyle(PALETTE.pantsDark, 1);
-      if (legFrame === 0) {
-        g.fillRect(5 * s, 14 * s, 1 * s, 5 * s);
-      } else if (legFrame === 1) {
-        g.fillRect(4 * s, 14 * s, 1 * s, 4 * s);
-      } else {
-        g.fillRect(6 * s, 14 * s, 1 * s, 5 * s);
-      }
+      // Hub center dot
+      g.fillStyle(silverLt, 1);
+      g.fillRect(10*s, 19*s, 1*s, 1*s);
+      g.fillRect(36*s, 19*s, 1*s, 1*s);
 
-      // Shoes
-      g.fillStyle(PALETTE.shoes, 1);
-      if (legFrame === 0) {
-        g.fillRect(5 * s, 19 * s, 3 * s, 2 * s);
-        g.fillRect(9 * s, 19 * s, 4 * s, 2 * s);
-      } else if (legFrame === 1) {
-        g.fillRect(4 * s, 18 * s, 3 * s, 2 * s);
-        g.fillRect(9 * s, 19 * s, 4 * s, 2 * s);
-      } else {
-        g.fillRect(6 * s, 19 * s, 4 * s, 2 * s);
-        g.fillRect(10 * s, 18 * s, 3 * s, 2 * s);
-      }
-
-      g.generateTexture(key, 16 * s, 21 * s);
+      g.generateTexture(key, W*s, H*s);
       g.clear();
     };
 
-    drawCharacter('student', 0);
-    drawCharacter('student-run-1', 1);
-    drawCharacter('student-run-2', 2);
+    drawDelorean('delorean', 0);
+    drawDelorean('delorean-drive-1', 0);
+    drawDelorean('delorean-drive-2', 1);
+
+    // --- Hover mode textures (wheels rotated 90° downward as thruster pods) ---
+    const drawDeloreanHover = (key, thrusterFrame) => {
+      // Same body as normal
+      g.fillStyle(undercar, 1);
+      g.fillRect(5*s, 17*s, 36*s, 2*s);
+      g.fillStyle(silver, 1);
+      g.fillRect(4*s, 10*s, 38*s, 7*s);
+      g.fillStyle(silverLt, 1);
+      g.fillRect(4*s, 10*s, 38*s, 1*s);
+      g.fillStyle(silverDk, 1);
+      g.fillRect(4*s, 16*s, 38*s, 1*s);
+      g.fillStyle(silverDk, 1);
+      g.fillRect(2*s, 10*s, 3*s, 7*s);
+      g.fillStyle(undercar, 1);
+      g.fillRect(2*s, 15*s, 3*s, 2*s);
+      g.fillStyle(silverDk, 1);
+      g.fillRect(40*s, 10*s, 3*s, 7*s);
+      g.fillRect(43*s, 11*s, 1*s, 5*s);
+      g.fillStyle(undercar, 1);
+      g.fillRect(40*s, 15*s, 4*s, 2*s);
+      g.fillStyle(silverDk, 1);
+      g.fillRect(11*s, 10*s, 1*s, 6*s);
+      g.fillRect(31*s, 10*s, 1*s, 6*s);
+      g.fillRect(11*s, 13*s, 20*s, 1*s);
+      g.fillStyle(stripe, 1);
+      g.fillRect(14*s, 10*s, 1*s, 6*s);
+      g.fillRect(18*s, 10*s, 1*s, 6*s);
+      g.fillRect(24*s, 10*s, 1*s, 6*s);
+      g.fillRect(28*s, 10*s, 1*s, 6*s);
+      g.fillStyle(silver, 1);
+      g.fillRect(12*s, 5*s, 19*s, 5*s);
+      g.fillRect(10*s, 7*s, 3*s, 3*s);
+      g.fillRect(30*s, 6*s, 3*s, 4*s);
+      g.fillRect(33*s, 7*s, 3*s, 3*s);
+      g.fillRect(36*s, 8*s, 3*s, 2*s);
+      g.fillRect(38*s, 9*s, 3*s, 1*s);
+      g.fillStyle(glass, 1);
+      g.fillRect(11*s, 7*s, 4*s, 3*s);
+      g.fillRect(17*s, 6*s, 6*s, 4*s);
+      g.fillRect(25*s, 6*s, 6*s, 4*s);
+      g.fillStyle(silverDk, 1);
+      g.fillRect(15*s, 5*s, 2*s, 5*s);
+      g.fillRect(23*s, 5*s, 2*s, 5*s);
+      g.fillStyle(fluxBlue, 1);
+      g.fillRect(0*s, 9*s, 2*s, 4*s);
+      g.fillStyle(fluxGlow, 1);
+      g.fillRect(0*s, 10*s, 1*s, 2*s);
+      g.fillStyle(0xff4400, 1);
+      g.fillRect(3*s, 11*s, 1*s, 1*s);
+      g.fillStyle(0x00ff88, 1);
+      g.fillRect(3*s, 12*s, 1*s, 1*s);
+      g.fillStyle(0xffdd00, 1);
+      g.fillRect(3*s, 13*s, 1*s, 1*s);
+      g.fillStyle(headlit, 1);
+      g.fillRect(42*s, 11*s, 2*s, 3*s);
+      g.fillStyle(0xffffff, 1);
+      g.fillRect(42*s, 11*s, 1*s, 1*s);
+      g.fillStyle(taillit, 1);
+      g.fillRect(2*s, 11*s, 1*s, 3*s);
+
+      // --- Hover wheel pods: wheels rotated 90°, hanging down as thrusters ---
+      // Rear pod arm
+      g.fillStyle(silverDk, 1);
+      g.fillRect(8*s, 17*s, 4*s, 3*s);
+      g.fillRect(34*s, 17*s, 4*s, 3*s);
+
+      // Wheel pod (horizontal ellipse rotated to vertical oval)
+      g.fillStyle(wheel, 1);
+      g.fillRect(8*s, 20*s, 4*s, 6*s);
+      g.fillRect(34*s, 20*s, 4*s, 6*s);
+
+      // Pod highlight
+      g.fillStyle(0x383838, 1);
+      g.fillRect(9*s, 20*s, 2*s, 5*s);
+      g.fillRect(35*s, 20*s, 2*s, 5*s);
+
+      // Hub ring
+      g.fillStyle(hubCol, 1);
+      g.fillRect(9*s, 21*s, 2*s, 3*s);
+      g.fillRect(35*s, 21*s, 2*s, 3*s);
+
+      // Thruster flame (animated: 2 frames)
+      if (thrusterFrame === 0) {
+        g.fillStyle(0xffffff, 1);
+        g.fillRect(9*s, 26*s, 2*s, 1*s);
+        g.fillStyle(0xffff40, 1);
+        g.fillRect(9*s, 27*s, 2*s, 2*s);
+        g.fillStyle(0xff8800, 1);
+        g.fillRect(8*s, 29*s, 4*s, 2*s);
+        g.fillStyle(0xff4400, 1);
+        g.fillRect(9*s, 31*s, 2*s, 2*s);
+        g.fillRect(35*s, 26*s, 2*s, 1*s);
+        g.fillStyle(0xffff40, 1);
+        g.fillRect(35*s, 27*s, 2*s, 2*s);
+        g.fillStyle(0xff8800, 1);
+        g.fillRect(34*s, 29*s, 4*s, 2*s);
+        g.fillStyle(0xff4400, 1);
+        g.fillRect(35*s, 31*s, 2*s, 2*s);
+      } else {
+        g.fillStyle(0xffffff, 1);
+        g.fillRect(9*s, 26*s, 2*s, 2*s);
+        g.fillStyle(0xffff40, 1);
+        g.fillRect(8*s, 28*s, 4*s, 2*s);
+        g.fillStyle(0xff8800, 1);
+        g.fillRect(9*s, 30*s, 2*s, 2*s);
+        g.fillStyle(0xff4400, 1);
+        g.fillRect(8*s, 32*s, 4*s, 1*s);
+        g.fillStyle(0xffffff, 1);
+        g.fillRect(35*s, 26*s, 2*s, 2*s);
+        g.fillStyle(0xffff40, 1);
+        g.fillRect(34*s, 28*s, 4*s, 2*s);
+        g.fillStyle(0xff8800, 1);
+        g.fillRect(35*s, 30*s, 2*s, 2*s);
+        g.fillStyle(0xff4400, 1);
+        g.fillRect(34*s, 32*s, 4*s, 1*s);
+      }
+
+      g.generateTexture(key, W*s, (H + 12)*s);
+      g.clear();
+    };
+
+    if (this.textures.exists('delorean-hover-1')) this.textures.remove('delorean-hover-1');
+    if (this.textures.exists('delorean-hover-2')) this.textures.remove('delorean-hover-2');
+    drawDeloreanHover('delorean-hover-1', 0);
+    drawDeloreanHover('delorean-hover-2', 1);
 
     g.destroy();
   }
@@ -203,22 +392,35 @@ export default class Game extends Phaser.Scene {
     this.physics.add.existing(this.ground, true);
     this.groundY = groundY;
 
-    // Player (student)
-    this.player = this.physics.add.sprite(100, groundY - 50, 'student');
+    // Player (DeLorean)
+    this.player = this.physics.add.sprite(100, groundY - 30, 'delorean');
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.ground);
 
-    if (this.anims.exists('run')) this.anims.remove('run');
+    if (this.anims.exists('delorean-drive')) this.anims.remove('delorean-drive');
     this.anims.create({
-      key: 'run',
+      key: 'delorean-drive',
       frames: [
-        { key: 'student-run-1' },
-        { key: 'student-run-2' }
+        { key: 'delorean-drive-1' },
+        { key: 'delorean-drive-2' }
       ],
-      frameRate: 12,
+      frameRate: 10,
       repeat: -1
     });
-    this.player.play('run');
+
+    if (this.anims.exists('delorean-hover')) this.anims.remove('delorean-hover');
+    this.anims.create({
+      key: 'delorean-hover',
+      frames: [
+        { key: 'delorean-hover-1' },
+        { key: 'delorean-hover-2' }
+      ],
+      frameRate: 14,
+      repeat: -1
+    });
+
+    this.player.play('delorean-drive');
+    this.isHovering = false;
 
     if (!this.anims.exists('bird-flap')) {
       this.anims.create({
@@ -271,11 +473,25 @@ export default class Game extends Phaser.Scene {
   jump() {
     if (this.isDead) return;
     if (this.player.body.touching.down) {
-      // Un salto alla massima potenza è più forte, permettendo più ampiezza se il tasto viene tenuto premuto
       this.player.setVelocityY(-550);
-      this.player.stop();
-      this.player.setTexture('student');
       playJumpSound();
+    }
+  }
+
+  _updateHoverMode() {
+    const HOVER_THRESHOLD = 40; // pixels above ground before hover kicks in
+    const playerBottom = this.player.y + this.player.displayHeight / 2;
+    const distanceFromGround = this.groundY - playerBottom;
+
+    const highEnough = distanceFromGround > HOVER_THRESHOLD;
+    const onGround = this.player.body.touching.down;
+
+    if (!onGround && highEnough && !this.isHovering) {
+      this.isHovering = true;
+      this.player.play('delorean-hover');
+    } else if ((onGround || !highEnough) && this.isHovering) {
+      this.isHovering = false;
+      this.player.play('delorean-drive');
     }
   }
 
@@ -419,13 +635,12 @@ export default class Game extends Phaser.Scene {
     this.isDead = true;
     this.physics.pause();
     this.player.stop();
-    this.player.setTexture('student');
-    this.player.setTint(0xd04040);
+    this.player.setTint(0xff4020);
     stopBGM();
     playHitSound();
 
     this.time.delayedCall(1000, () => {
-      this.scene.start('GameOver', { score: Math.floor(this.score), playerConfig: this.playerConfig });
+      this.scene.start('GameOver', { score: Math.floor(this.score) });
     });
   }
 
@@ -451,9 +666,7 @@ export default class Game extends Phaser.Scene {
   update(time, delta) {
     if (this.isDead) return;
 
-    if (this.player.body.touching.down && !this.player.anims.isPlaying) {
-      this.player.play('run');
-    }
+    this._updateHoverMode();
 
     // Scroll ground
     this.ground.tilePositionX += (this.gameSpeed * delta) / 1000;

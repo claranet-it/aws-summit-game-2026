@@ -81,22 +81,36 @@ export default class Preloader extends Phaser.Scene {
 
     // --- Character sprite is now generated dynamically in Game.js ---
 
-    // --- Certificate ---
-    g.fillStyle(PALETTE.certPaper, 1);
-    g.fillRect(0, 0, 12 * s, 9 * s);
-    g.fillStyle(PALETTE.certBorder, 1);
-    g.fillRect(0, 0, 12 * s, 1 * s);
-    g.fillRect(0, 8 * s, 12 * s, 1 * s);
-    g.fillRect(0, 0, 1 * s, 9 * s);
-    g.fillRect(11 * s, 0, 1 * s, 9 * s);
-    g.fillStyle(PALETTE.certText, 1);
-    g.fillRect(3 * s, 2 * s, 6 * s, 1 * s);
-    g.fillRect(2 * s, 4 * s, 8 * s, 1 * s);
-    g.fillRect(4 * s, 6 * s, 4 * s, 1 * s);
-    g.fillStyle(PALETTE.certSeal, 1);
-    g.fillRect(5 * s, 7 * s, 2 * s, 2 * s);
-    g.generateTexture('certificate', 12 * s, 9 * s);
-    g.clear();
+    // Helper to draw a certificate with given colors
+    const drawCert = (key, paper, border, text, seal) => {
+      g.fillStyle(paper, 1);
+      g.fillRect(0, 0, 12 * s, 9 * s);
+      g.fillStyle(border, 1);
+      g.fillRect(0, 0, 12 * s, 1 * s);
+      g.fillRect(0, 8 * s, 12 * s, 1 * s);
+      g.fillRect(0, 0, 1 * s, 9 * s);
+      g.fillRect(11 * s, 0, 1 * s, 9 * s);
+      // inner border decoration
+      g.fillRect(1 * s, 1 * s, 10 * s, 1 * s);
+      g.fillRect(1 * s, 7 * s, 10 * s, 1 * s);
+      g.fillStyle(text, 1);
+      g.fillRect(3 * s, 2 * s, 6 * s, 1 * s);
+      g.fillRect(2 * s, 4 * s, 8 * s, 1 * s);
+      g.fillRect(4 * s, 6 * s, 4 * s, 1 * s);
+      g.fillStyle(seal, 1);
+      g.fillCircle(6 * s, 7 * s, 1.5 * s);
+      g.generateTexture(key, 12 * s, 9 * s);
+      g.clear();
+    };
+
+    // --- Certificate tiers ---
+    // Bronze – Foundational (+50)
+    drawCert('cert-bronze', 0xf8e8c8, 0xb07830, 0x604020, 0xb05020);
+    // Silver – Associate (+100)
+    drawCert('cert-silver', 0xeef2f8, 0x8899b0, 0x334458, 0x4466aa);
+    // Gold – Pro/Specialty (+200)
+    drawCert('cert-gold',   0xfff8d8, 0xd4a800, 0x5a3c00, 0xcc8800);
+
 
     // --- Fire Hydrant (taller, scale 3) ---
     const hs = 3; // hydrant scale

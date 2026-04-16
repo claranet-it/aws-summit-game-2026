@@ -611,19 +611,33 @@ export default class Game extends Phaser.Scene {
   spawnCertificate() {
     const w = this.scale.width;
     const yPos = this.groundY - Phaser.Math.Between(60, 140);
-    const cert = this.certificates.create(w + 50, yPos, 'certificate');
+
+    // Pick tier based on rarity: 70% Foundational, 20% Associate, 10% Pro
+    const roll = Phaser.Math.Between(1, 100);
+    let tier, texKey, auraColor, points;
+    if (roll <= 70) {
+      tier = 'bronze'; texKey = 'cert-bronze'; auraColor = 0xcc7730; points = 50;
+    } else if (roll <= 90) {
+      tier = 'silver'; texKey = 'cert-silver'; auraColor = 0x88aadd; points = 100;
+    } else {
+      tier = 'gold';   texKey = 'cert-gold';   auraColor = 0xffcc00; points = 200;
+    }
+
+    const cert = this.certificates.create(w + 50, yPos, texKey);
     cert.setScale(1.5 * WORLD_SCALE);
     cert.setDepth(1);
     cert.setVelocityX(-this.gameSpeed * 1.2);
     cert.waveTime = 0;
     cert.baseY = yPos;
+    cert.pointsValue = points;
+    cert.tier = tier;
 
     // Create aura
     cert.aura = this.add.graphics();
-    cert.aura.fillStyle(0xffdd40, 0.6); // Golden-yellow glow
+    cert.aura.fillStyle(auraColor, 0.6);
     cert.aura.fillCircle(0, 0, 24 * WORLD_SCALE);
     cert.aura.setDepth(0);
-    
+
     // Tween aura to pulse rapidly
     this.tweens.add({
       targets: cert.aura,
@@ -642,8 +656,9 @@ export default class Game extends Phaser.Scene {
 
   catchCertificate(player, cert) {
     if (cert.aura) cert.aura.destroy();
+    const pts = cert.pointsValue || 50;
     cert.destroy();
-    this.score += 50;
+    this.score += pts;
     this.scoreText.setText(Math.floor(this.score).toString());
     playYeahSound();
     this.certActive = false;

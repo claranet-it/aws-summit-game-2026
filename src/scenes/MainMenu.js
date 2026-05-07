@@ -16,9 +16,10 @@ export default class MainMenu extends Phaser.Scene {
     // ── BTTF-style title ──────────────────────────────────────────────
     const cx = w / 2;
     const titleBaseY = isMobile ? 90 : 110;
-    const scale = isMobile ? 0.7 : 1;
-
-    this._makeBttfTitle(cx, titleBaseY, scale);
+    const logo = this.add.image(cx, titleBaseY + 30, 'bttc-logo').setOrigin(0.5);
+    const targetWidth = w / 3;
+    const logoScale = targetWidth / logo.width;
+    logo.setScale(logoScale);
 
     // Instructions
     const instY = titleBaseY + (isMobile ? 145 : 175);
@@ -104,37 +105,6 @@ export default class MainMenu extends Phaser.Scene {
     this.input.once('pointerdown', this.startGame, this);
   }
 
-  // ── BTTF logo-style title ────────────────────────────────────────────
-  _makeBttfTitle(cx, baseY, scale) {
-    const angle = -8;
-    const font = '"Arial Black", "Impact", Arial, sans-serif';
-
-    // Helper: draw one line with layered shadow + gradient simulation
-    const drawLine = (text, x, y, size) => {
-      const s = Math.round(size * scale);
-      const base = { fontFamily: font, fontSize: `${s}px`, fontStyle: 'bold italic', align: 'center' };
-
-      // dark maroon shadow
-      this.add.text(x + 4 * scale, y + 4 * scale, text, { ...base, color: '#3a0000' }).setOrigin(0.5).setAngle(angle);
-      // black outline
-      this.add.text(x + 2 * scale, y + 2 * scale, text, { ...base, color: '#000000', stroke: '#000000', strokeThickness: Math.round(6 * scale) }).setOrigin(0.5).setAngle(angle);
-      // red base
-      this.add.text(x, y, text, { ...base, color: '#cc1100', stroke: '#7a0000', strokeThickness: Math.round(4 * scale) }).setOrigin(0.5).setAngle(angle);
-      // orange mid
-      this.add.text(x, y - 2 * scale, text, { ...base, color: '#ff6600', stroke: '#cc1100', strokeThickness: Math.round(2 * scale) }).setOrigin(0.5).setAngle(angle);
-      // yellow top highlight
-      this.add.text(x, y - 5 * scale, text, { ...base, color: '#ffdd00' }).setOrigin(0.5).setAngle(angle);
-      // white shine on very top
-      this.add.text(x, y - 8 * scale, text, { ...base, color: '#fffbe0', alpha: 0.35 }).setOrigin(0.5).setAngle(angle).setAlpha(0.35);
-    };
-
-    const lineGap = isMobile => isMobile ? 38 : 52; // eslint-disable-line no-unused-vars
-    const gap = Math.round(52 * scale);
-
-    drawLine('BACK TO THE', cx, baseY, 54);
-    drawLine('FUTURE OF', cx, baseY + gap, 62);
-    drawLine('CLOUD', cx, baseY + gap * 2, 80);
-  }
 
   startGame() {
     this.scene.start('Game');
